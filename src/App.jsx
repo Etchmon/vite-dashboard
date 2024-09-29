@@ -5,8 +5,6 @@ function App() {
   return (
     <Router>
       <Navbar />
-      <Route path="/" />
-      <Route path="/settings" />
     </Router>
   );
 }
