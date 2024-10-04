@@ -4,7 +4,7 @@ function Navbar() {
   const { isOpen, onToggle } = useDisclosure();
 
   return (
-    <Box bg="gray.800" p={4}>
+    <Box bg="catppuccin.base" p={4}>
       <Flex justify="space-between" align="center">
         <Box color="white" fontSize="lg" fontWeight="bold">My Dashboard</Box>
         <Button

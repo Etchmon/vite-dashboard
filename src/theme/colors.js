@@ -1,4 +1,4 @@
-const catppuccinColors = {
+const catppuccinMocha = {
   rosewater: "#f5e0dc",
   flamingo: "#f2cdcd",
   pink: "#f5c2e7",
@@ -27,5 +27,5 @@ const catppuccinColors = {
   crust: "#11111b",
 };
 
-export default catppuccinColors;
+export default catppuccinMocha;
 
