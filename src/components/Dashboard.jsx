@@ -9,14 +9,14 @@ function Dashboard() {
     { label: 'April', value: 80 },
   ];
   return (
-    <Flex height="100%" width="100vw" bg="catppuccin.surface0">
-      <Box bg="catppuccin.surface0" color="catpuccin.text" p="4" textAlign={['center']}>
-        <Grid templateColumns="repeat(5,1fr) gap={6}">
+    <Flex bg="catppuccin.surface0" height="100vh" width="100vw" bg="catppuccin.surface0">
+      <Box width="100%" bg="catppuccin.surface0" color="catpuccin.text" p="4" textAlign={['center']}>
+        <Grid templateColumns={{ base:'repeat(1, 1fr)', md:'repeat(2, 1fr)'}} gap={6}>
           <GridItem>
-            <BarChartComponent colSpan={2} data={data}/>
+            <BarChartComponent data={data}/>
           </GridItem>
           <GridItem>
-            <BarChartComponent colSpan={2} data={data}/>
+            <BarChartComponent data={data}/>
           </GridItem>
         </Grid>
       </Box>
