@@ -10,7 +10,7 @@ function Dashboard() {
   ];
   return (
     <Flex height="100vh">
-      <Box width="100vw" bg="catppuccin.surface0" color="catpuccin.text" p="4" textAlign={['center']}>
+      <Box width="100%" bg="catppuccin.surface0" color="catpuccin.text" p="4" textAlign={['center']}>
         <Grid templateColumns="repeat(3,1fr) gap={6}">
           <GridItem>
             <BarChartComponent data={data}/>
