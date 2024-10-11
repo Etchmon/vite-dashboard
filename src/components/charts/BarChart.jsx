@@ -11,7 +11,7 @@ const BarChartComponent = ({ data }) => {
   const textColor = useColorModeValue(catppuccinMocha.text, catppuccinMocha.text);
 
   return (
-    <Box bg={bgColor} p={2} width={{ base:'100%', md:'500px'}} height={{ base:'400', md:'600px'}} borderRadius="md" boxShadow="md">
+    <Box bg={bgColor} p={2} width={{ base:'100%'}} height={{ base:'400', md:'600px'}} borderRadius="md" boxShadow="md">
       <ThemeProvider theme={muiTheme}>
         <BarChart
           xAxis={[
