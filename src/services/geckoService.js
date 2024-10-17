@@ -2,14 +2,20 @@
 import axios from 'axios';
 
 export const getTopCoins = async () => {
-  const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1`;
+  const url = `https://api.coingecko.com/api/v3/coins/list`;
+  const options = {
+    method: 'GET',
+    headers: {
+      accept: 'application/json',
+    },
+  };
 
   try {
-    const response = await axios.get(url);
-    return response.data; // Array of top 20 coins
+    const response = await axios.get(url,options)
+    return response.data;
   } catch (error) {
-    console.error("Error fetching top coins", error);
-    return null;
+    console.error('Error fetching data:', error.message);
   }
 };
+
 
