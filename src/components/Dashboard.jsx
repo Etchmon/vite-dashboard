@@ -11,6 +11,7 @@ function Dashboard() {
       const data = await getTopCoins();
       setCoins(data);
     };
+    console.log(coins)
 
     fetchData();
     console.log(coins);
