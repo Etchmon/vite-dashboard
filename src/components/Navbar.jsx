@@ -9,14 +9,14 @@ function Navbar() {
         <Box color="white" fontSize="lg" fontWeight="bold">My Dashboard</Box>
         <Button
           colorScheme="teal"
-          display={['block', 'block', 'none']}
+          display={['block', 'block', 'block', 'none']}
           onClick={onToggle}
         >
           Menu
         </Button>
       </Flex>
       {isOpen && (
-        <Flex direction="column" bg="gray.700" mt={2} display={['flex','flex', 'none']}>
+        <Flex direction="column" bg="gray.700" mt={2} display={['flex','flex', 'flex', 'none']}>
           <Button colorScheme="teal" mb={2}>Dashboard</Button>
           <Button colorScheme="teal">Settings</Button>
         </Flex>
