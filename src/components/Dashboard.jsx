@@ -13,9 +13,9 @@ function Dashboard() {
     };
 
     fetchData();
-    console.log(coins);
   }, []);
 
+  console.log(coins);
   const data = [
     { label: 'January', value: 30 },
     { label: 'February', value: 20 },
