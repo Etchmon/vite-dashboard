@@ -1,6 +1,6 @@
 import { Box, Text, VStack, HStack, Stat, StatLabel, StatNumber, StatHelpText } from '@chakra-ui/react';
 
-const CoinCard = {{ coin }} => {
+const CoinCard = ({coin}) => {
   const { name, symbol, current_price, price_change_percentage_24h } = coin;
   return (
     <Box p={4} boxShadow="md" borderRadius="md" bg="catpuccin.surface1">
@@ -15,7 +15,7 @@ const CoinCard = {{ coin }} => {
         </HStack>
         <Stat>
           <StatLabel>24h Change</StatLabel>
-          <StatNumber color=(price_change_percentage_24h > 0 ? "green.400" : "red.400")>
+          <StatNumber color={price_change_percentage_24h > 0 ? "green.400" : "red.400"}>
             {price_change_percentage_24h.toFixed(2)}%
           </StatNumber>
         </Stat>

@@ -1,4 +1,5 @@
 import { Box, Flex, Button, Stack, useDisclosure } from '@chakra-ui/react'
+import CoinList from './CoinList'
 
 function Navbar() {
   const { isOpen, onToggle } = useDisclosure();
@@ -17,8 +18,7 @@ function Navbar() {
       </Flex>
       {isOpen && (
         <Flex direction="column" bg="gray.700" mt={2} display={['flex','flex', 'flex', 'none']}>
-          <Button colorScheme="teal" mb={2}>Dashboard</Button>
-          <Button colorScheme="teal">Settings</Button>
+          <CoinList />
         </Flex>
       )}
     </Box>
