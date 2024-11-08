@@ -6,10 +6,10 @@ const CoinCard = ({coin}) => {
     <Box p={4} boxShadow="md" borderRadius="md" bg="catpuccin.surface1">
       <VStack align="start" spacing={3}>
         <HStack justify="space-between" w="full">
-          <Text fontsize="lg" fontweight="bold">
+          <Text fontSize="lg" fontWeight="bold">
             {name} ({symbol.toUpperCase()})
           </Text>
-          <Text fontsize="md" fontweight="bold">
+          <Text fontSize="md" fontWeight="bold">
             ${current_price.toFixed(2)}
           </Text>
         </HStack>
