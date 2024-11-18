@@ -1,26 +1,40 @@
 import { Box, Flex, Button, Stack, useDisclosure } from '@chakra-ui/react'
-import CoinList from './CoinList'
+import SidebarContent from './SidebarContent.jsx';
 
 function Navbar() {
-  const { isOpen, onToggle } = useDisclosure();
+  const { isOpen, onToggle, onClose } = useDisclosure();
 
   return (
-    <Box bg="catppuccin.base" p={4} width={{base:'100%', lg:'300px'}} height={{lg:'100vh'}} position={{lg:'fixed'}}>
-      <Flex justify="space-between" align="center">
-        <Box color="white" fontSize="lg" fontWeight="bold">My Dashboard</Box>
-        <Button
-          colorScheme="teal"
-          display={['block', 'block', 'block', 'none']}
-          onClick={onToggle}
+    <Box>
+      {/* Main Container */}
+      <Flex>
+        {/* Sidebar */}
+        <Box
+          bg="catppuccin.base"
+          pg={4}
+          width={{ base: '100%', lg: '300px'}}
+          height={{ base: 'auto', lg: '100vh'}}
+          position={{ lg: 'fixed'}}
+          overflowY={{ lg: 'auto'}}
+          display={{ base: isOpen ? 'block' : 'none', lg: 'block'}}
+          zIndex={{ base: 'overlay', lg: 'auto' }} 
         >
-          Menu
-        </Button>
+          <SidebarContent onClose={onClose} />
+        </Box>
+
+        { /* Menu Button for Small Screens */}
+        <Box 
+          display={{ base: 'block', lg: 'none'}}
+          position="fixed"
+          top="4"
+          left="4"
+          zIndex="overlay"
+        >
+          <Button colorScheme="teal" onClick={onToggle}>
+            {isOpen ? 'Close' : 'Menu'}
+          </Button>
+        </Box>
       </Flex>
-      {isOpen && (
-        <Flex direction="column" bg="gray.700" mt={2} display={['flex','flex', 'flex', 'none']}>
-          <CoinList />
-        </Flex>
-      )}
     </Box>
   );
 }

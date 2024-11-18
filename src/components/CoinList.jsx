@@ -1,9 +1,9 @@
 import { SimpleGrid, Box } from '@chakra-ui/react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getTopCoins } from '../services/geckoService';
 import CoinCard from './CoinCard.jsx';
 
-const TopCoinsList = () => {
+const CoinList = () => {
   const [coins, setCoins] = useState([]);
 
   useEffect(() => {
@@ -15,15 +15,16 @@ const TopCoinsList = () => {
     fetchData();
   }, []);
 
+  console.log(coins)
   return (
-    <SimpleGrid columns={{ base: 1}}>
+    <SimpleGrid columns={1} spacing={4}>
       {coins.map((coin) => (
         <Box key={coin.id} p={4} boxShadow="md" borderRadius="md" bg="catpuccino.surface1">
-          <CoinCard coin={coin} />
+          <CoinCard coin={coin} /> 
         </Box>
       ))}
     </SimpleGrid>
   );
 }
 
-export default TopCoinsList;
+export default CoinList;

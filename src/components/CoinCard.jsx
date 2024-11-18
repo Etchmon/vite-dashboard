@@ -3,7 +3,7 @@ import { Box, Text, VStack, HStack, Stat, StatLabel, StatNumber, StatHelpText } 
 const CoinCard = ({coin}) => {
   const { name, symbol, current_price, price_change_percentage_24h } = coin;
   return (
-    <Box p={4} boxShadow="md" borderRadius="md" bg="catpuccin.surface1">
+    <Box p={{base:'4', lg:'2'}} boxShadow="md" borderRadius="md" bg="catpuccin.surface1" color='white'>
       <VStack align="start" spacing={3}>
         <HStack justify="space-between" w="full">
           <Text fontSize="lg" fontWeight="bold">
