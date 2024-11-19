@@ -3,9 +3,9 @@ import TopCoinsList from './CoinList';
 
 function SidebarContent({ onClose}) {
   return (
-    <VStack align="start" spacing={4}>
+    <VStack align={{base:'center', lg:'start'}} spacing={4}>
       { /* Sidebar Header */}
-      <Box colorj="white" fontSize="lg" fontWeight="bold">
+      <Box color="white" fontSize={{base: 'lg', lg: '1.8rem'}} fontWeight="bold" p={4}>
         Top Crypto Coins
       </Box>
       
