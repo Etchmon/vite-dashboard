@@ -22,6 +22,8 @@ function Navbar() {
           <SidebarContent onClose={onClose} />
         </Box>
 
+        { /* Logo */}
+
         { /* Menu Button for Small Screens */}
         <Box
           display={{ base: 'block', lg: 'none' }}
