@@ -23,8 +23,6 @@ const CoinList = () => {
     fetchData();
   }, []);
 
-  console.log(coins);
-
   if (loading) {
     return <Spinner size="xl" />;
   }
