@@ -40,11 +40,14 @@ const TickerBar = () => {
           <Text
             key={coin.id}
             p={4}
-            color="catppuccin.text"
+            color={
+              coin.price_change_percentage_24h >= 0 ? "green.500" : "red.500"
+            }
             fontSize="lg"
             fontWeight="semibold"
           >
-            {coin.symbol.toUpperCase()} ${coin.current_price}
+            {coin.symbol.toUpperCase()} (
+            {coin.price_change_percentage_24h.toFixed(2)}%)
           </Text>
         ))}
       </Flex>

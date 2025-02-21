@@ -5,9 +5,10 @@ const cacheKey = "topCoins";
 const fetchInterval = 2 * 60 * 1000; // 2 minutes
 
 export const fetchTopCoins = async () => {
-  const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&x_cg_demo_api_key=${apiKey}`;
+  const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&x_cg_demo_api_key=${apiKey}`;
 
   try {
+    console.log("Fetching top coins from API at", new Date().toISOString());
     // Fetch data
     const response = await fetch(url, {
       headers: {
@@ -36,6 +37,7 @@ setInterval(fetchTopCoins, fetchInterval);
 
 export const getTopCoins = async () => {
   if (cache.has(cacheKey)) {
+    console.log("Fetching cached data at:", new Date().toISOString());
     return cache.get(cacheKey); // Retrieving data from cache
   } else {
     return fetchTopCoins();
