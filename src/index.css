@@ -1,1 +1,7 @@
-
+html {
+  background-color: var(--chakra-colors-catppuccin-base);
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  min-height: 100vh;
+}

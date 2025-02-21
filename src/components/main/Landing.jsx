@@ -4,7 +4,7 @@ import TickerBar from "./../ticker/TickerBar.jsx";
 
 function Landing() {
   return (
-    <Flex direction={"column"}>
+    <Flex direction={"column"} bg="catppuccin.base">
       <Header />
       <TickerBar />
     </Flex>

@@ -6,7 +6,7 @@ const Header = () => {
       bgImage="url()"
       bgSize="cover"
       bgPosition="center"
-      height="300px"
+      height="50vh"
       display="flex"
       alignItems="center"
       justifyContent="center"

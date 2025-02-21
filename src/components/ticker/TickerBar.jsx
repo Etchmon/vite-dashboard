@@ -28,13 +28,19 @@ const TickerBar = () => {
   }, []);
 
   return (
-    <Box overflow="hidden" whiteSpace="nowrap" bg="catpuccino.surface1">
-      <Flex animation={`${scroll} 30s linear infinite`}>
+    <Box
+      width="100%"
+      py={2}
+      overflow="hidden"
+      whiteSpace="nowrap"
+      bg="catpuccino.surface1"
+    >
+      <Flex animation={`${scroll} 12s linear infinite`}>
         {coins.map((coin) => (
           <Text
             key={coin.id}
             p={4}
-            color="catpuccino.onSurface"
+            color="catppuccin.text"
             fontSize="lg"
             fontWeight="semibold"
           >
