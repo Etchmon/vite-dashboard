@@ -14,7 +14,7 @@ const TickerBar = () => {
 
         // Calculate duration based on the number of coins
         const coinCount = data.length;
-        setDuration(coinCount * 2);
+        setDuration(coinCount * 4);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
