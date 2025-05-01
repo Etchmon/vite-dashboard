@@ -13,7 +13,7 @@ function App() {
         <Box
           flex="1"
           ml={{ base: "0", lg: "300px" }}
-          p={4}
+          p={{ base: 0, md: 4 }}
           bg="gray.50"
           minH="100vh"
           maxW="100%"

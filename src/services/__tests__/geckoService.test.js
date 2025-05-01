@@ -1,16 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import {
-  fetchTopCoins,
-  getTopCoins,
-  getRequestCount,
-  getCacheStatus,
-} from "../geckoService";
+import { fetchTopCoins, getTopCoins, getCacheStatus } from "../geckoService";
 
-// Mock fetch
+// Mock fetch globally for all tests
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
-// Sample mock data to be used across tests
+// Sample mock data to be used across all tests
+// Contains 3 coins with different price changes for testing
 const mockData = [
   {
     id: "bitcoin",
@@ -33,22 +29,27 @@ const mockData = [
 ];
 
 describe("geckoService", () => {
+  // Setup before each test
   beforeEach(() => {
     vi.clearAllMocks();
     vi.resetModules();
     vi.useFakeTimers();
 
-    // Set up initial mock response
+    // Set up initial mock response for API call
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(mockData),
     });
   });
 
+  // Cleanup after each test
   afterEach(() => {
     vi.useRealTimers();
   });
 
+  // Test API Initialization
+  // - Verifies that the initial API call works
+  // - Ensures we're making the correct number of API calls
   describe("API Initialization", () => {
     it("should make one successful API call", async () => {
       const result = await fetchTopCoins();
@@ -57,6 +58,9 @@ describe("geckoService", () => {
     });
   });
 
+  // Test Caching Functionality
+  // - Verifies that subsequent calls use cached data
+  // - Checks cache status reporting
   describe("Caching", () => {
     it("should use cached data for subsequent calls", async () => {
       // First call - should use API
@@ -79,6 +83,10 @@ describe("geckoService", () => {
     });
   });
 
+  // Test Data Processing
+  // - Verifies correct identification of top gainers
+  // - Verifies correct identification of top losers
+  // - Verifies correct calculation of volatility
   describe("Data Processing", () => {
     it("should correctly identify top gainers", async () => {
       const data = await getTopCoins();
@@ -112,6 +120,9 @@ describe("geckoService", () => {
     });
   });
 
+  // Test Error Handling
+  // - Verifies that the service handles API errors gracefully
+  // - Ensures cached data is returned when API fails
   describe("Error Handling", () => {
     it("should handle API errors gracefully", async () => {
       // Clear previous mocks

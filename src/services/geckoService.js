@@ -1,4 +1,6 @@
 // src/services/geckoService.js
+
+// Configuration and Constants
 const apiKey = import.meta.env.VITE_API_KEY;
 const cache = new Map();
 const cacheKey = "topCoins";
@@ -6,7 +8,10 @@ const fetchInterval = 2 * 60 * 1000; // 2 minutes
 const MAX_REQUESTS_PER_MINUTE = 10; // CoinGecko free tier limit
 const requestTimestamps = [];
 
-// Rate limiting function
+// Rate Limiting Logic
+// - Track timestamps of recent requests
+// - Remove timestamps older than 1 minute
+// - Throw error if we've hit the rate limit
 const checkRateLimit = () => {
   const now = Date.now();
   const oneMinuteAgo = now - 60 * 1000;
@@ -24,7 +29,8 @@ const checkRateLimit = () => {
   requestTimestamps.push(now);
 };
 
-// Error handling class
+// Custom Error Class for API Errors
+// - Includes status code and response data
 class APIError extends Error {
   constructor(message, status, data) {
     super(message);
@@ -34,10 +40,16 @@ class APIError extends Error {
   }
 }
 
+// Main API Fetch Function
+// - Makes request to CoinGecko API
+// - Handles rate limiting
+// - Validates response
+// - Caches successful responses
 export const fetchTopCoins = async () => {
   const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&x_cg_demo_api_key=${apiKey}`;
 
   try {
+    // Check rate limit before making request
     checkRateLimit();
 
     console.log("Fetching top coins from API at", new Date().toISOString());
@@ -48,6 +60,7 @@ export const fetchTopCoins = async () => {
       },
     });
 
+    // Handle non-200 responses
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new APIError(
@@ -64,7 +77,7 @@ export const fetchTopCoins = async () => {
       throw new APIError("Invalid data structure received from API", 500);
     }
 
-    // Store data with timestamp and request count
+    // Cache successful response
     cache.set(cacheKey, {
       data,
       timestamp: Date.now(),
@@ -83,19 +96,20 @@ export const fetchTopCoins = async () => {
   }
 };
 
-// Initial fetch
+// Initial fetch on module load
 fetchTopCoins();
 
-// Set up interval to fetch data every 2 minutes
+// Set up interval to refresh data
 setInterval(fetchTopCoins, fetchInterval);
 
-// Function checks if the cache is empty or if the data is older than the fetch interval
-// If so, it fetches new data from the API
-// Otherwise, it returns the cached data
+// Public API for getting coin data
+// - Returns cached data if available and fresh
+// - Fetches new data if cache is empty or stale
 export const getTopCoins = async () => {
   const cached = cache.get(cacheKey);
   const now = Date.now();
 
+  // Return cached data if it's fresh
   if (cached && now - cached.timestamp < fetchInterval) {
     console.log(
       "Using cached data from:",
@@ -106,13 +120,12 @@ export const getTopCoins = async () => {
     return cached.data;
   }
 
+  // Fetch new data if cache is stale or empty
   console.log("Cache expired or not found, fetching fresh data");
   return fetchTopCoins();
 };
 
-// Function to fetch historical market data for specific coin
-
-// Export monitoring functions for testing
+// Monitoring Functions
 export const getRequestCount = () => requestTimestamps.length;
 export const getCacheStatus = () => {
   const cached = cache.get(cacheKey);
