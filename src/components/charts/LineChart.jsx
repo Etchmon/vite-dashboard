@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { Box, Button, ButtonGroup, Spinner, Text } from "@chakra-ui/react";
-import { LineChart } from "@mui/x-charts/LineChart";
+import {
+  LineChart as RechartsLineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { getTopCoins } from "../../services/geckoService";
 
 const timeRanges = {
@@ -95,20 +103,43 @@ const CryptoChart = () => {
       {loading ? (
         <Spinner size="xl" color="white" />
       ) : chartData.length > 0 ? (
-        <LineChart
-          xAxis={[{ id: "time", dataKey: "time", scaleType: "point" }]}
-          series={[
-            {
-              id: "price",
-              dataKey: "price",
-              label: "Price (USD)",
-              color: "blue",
-            },
-          ]}
-          dataset={chartData}
-          width={600}
-          height={300}
-        />
+        <Box height="300px" width="100%">
+          <ResponsiveContainer>
+            <RechartsLineChart
+              data={chartData}
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#4A5568" />
+              <XAxis
+                dataKey="time"
+                stroke="#A0AEC0"
+                tick={{ fill: "#A0AEC0" }}
+              />
+              <YAxis
+                stroke="#A0AEC0"
+                tick={{ fill: "#A0AEC0" }}
+                tickFormatter={(value) => `$${value.toLocaleString()}`}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#2D3748",
+                  border: "none",
+                  borderRadius: "md",
+                }}
+                labelStyle={{ color: "#A0AEC0" }}
+                formatter={(value) => [`$${value.toLocaleString()}`, "Price"]}
+              />
+              <Line
+                type="monotone"
+                dataKey="price"
+                stroke="#3182CE"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 8 }}
+              />
+            </RechartsLineChart>
+          </ResponsiveContainer>
+        </Box>
       ) : (
         <Text color="gray.400">No data available</Text>
       )}

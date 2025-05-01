@@ -1,5 +1,7 @@
 // src/services/geckoService.js
 
+import { securityConfig } from "../config/security";
+
 // Configuration and Constants
 const apiKey = import.meta.env.VITE_API_KEY;
 const cache = new Map();
@@ -40,6 +42,42 @@ class APIError extends Error {
   }
 }
 
+// Input validation function
+const validateCoinId = (coinId) => {
+  if (!coinId || typeof coinId !== "string") {
+    throw new APIError("Invalid coin ID", 400);
+  }
+
+  if (coinId.length > securityConfig.validation.maxCoinIdLength) {
+    throw new APIError("Coin ID too long", 400);
+  }
+
+  if (!securityConfig.validation.allowedCoinIdChars.test(coinId)) {
+    throw new APIError("Invalid characters in coin ID", 400);
+  }
+
+  return true;
+};
+
+// Request timeout function
+const timeoutPromise = (ms, promise) => {
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new APIError("Request timeout", 408));
+    }, ms);
+    promise.then(
+      (res) => {
+        clearTimeout(timeoutId);
+        resolve(res);
+      },
+      (err) => {
+        clearTimeout(timeoutId);
+        reject(err);
+      }
+    );
+  });
+};
+
 // Main API Fetch Function
 // - Makes request to CoinGecko API
 // - Handles rate limiting
@@ -53,12 +91,18 @@ export const fetchTopCoins = async () => {
     checkRateLimit();
 
     console.log("Fetching top coins from API at", new Date().toISOString());
-    const response = await fetch(url, {
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    });
+
+    const response = await timeoutPromise(
+      securityConfig.api.timeout,
+      fetch(url, {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          // Add security headers
+          ...securityConfig.headers,
+        },
+      })
+    );
 
     // Handle non-200 responses
     if (!response.ok) {
@@ -93,6 +137,38 @@ export const fetchTopCoins = async () => {
     throw new APIError("Network error occurred", 0, {
       originalError: error.message,
     });
+  }
+};
+
+// Fetch coin details with validation
+export const fetchCoinDetails = async (coinId) => {
+  try {
+    validateCoinId(coinId);
+
+    const url = `https://api.coingecko.com/api/v3/coins/${coinId}?x_cg_demo_api_key=${apiKey}`;
+
+    const response = await timeoutPromise(
+      securityConfig.api.timeout,
+      fetch(url, {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...securityConfig.headers,
+        },
+      })
+    );
+
+    if (!response.ok) {
+      throw new APIError(
+        `Failed to fetch coin details: ${response.statusText}`,
+        response.status
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching coin details:", error);
+    throw error;
   }
 };
 
