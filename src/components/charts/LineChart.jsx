@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Box, Button, ButtonGroup, Spinner, Text } from "@chakra-ui/react";
 import { LineChart } from "@mui/x-charts/LineChart";
-import { getTopCoins } from "../../services/geckoService.js";
+import { getTopCoins } from "../../services/geckoService";
 
 const timeRanges = {
   "1H": { days: 1 },

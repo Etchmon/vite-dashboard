@@ -1,7 +1,7 @@
 import { SimpleGrid, Box, Spinner, Alert, AlertIcon } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import { getTopCoins } from "../../services/geckoService.js";
-import CoinCard from "./CoinCard.jsx";
+import { getTopCoins } from "../../../services/geckoService";
+import CoinCard from "./CoinCard";
 
 const CoinList = () => {
   const [coins, setCoins] = useState([]);

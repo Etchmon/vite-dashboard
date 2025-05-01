@@ -21,7 +21,11 @@ export const fetchTopCoins = async () => {
     }
 
     const data = await response.json();
-    cache.set(cacheKey, data); // Storing the data in the cache
+    // Store data with timestamp
+    cache.set(cacheKey, {
+      data,
+      timestamp: Date.now(),
+    });
     return data;
   } catch (error) {
     console.error("Error fetching data:", error);
@@ -39,10 +43,17 @@ setInterval(fetchTopCoins, fetchInterval);
 // If so, it fetches new data from the API
 // Otherwise, it returns the cached data
 export const getTopCoins = async () => {
-  if (cache.has(cacheKey)) {
-    console.log("Fetching cached data at:", new Date().toISOString());
-    return cache.get(cacheKey); // Retrieving data from cache
+  const cached = cache.get(cacheKey);
+  const now = Date.now();
+
+  if (cached && now - cached.timestamp < fetchInterval) {
+    console.log(
+      "Using cached data from:",
+      new Date(cached.timestamp).toISOString()
+    );
+    return cached.data;
   } else {
+    console.log("Cache expired or not found, fetching fresh data");
     return fetchTopCoins();
   }
 };

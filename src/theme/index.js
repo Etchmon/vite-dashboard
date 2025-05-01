@@ -2,6 +2,21 @@ import { extendTheme } from "@chakra-ui/react";
 import catppuccinColors from "./colors";
 
 const theme = extendTheme({
+  styles: {
+    global: {
+      html: {
+        bg: "catppuccin.base",
+        margin: 0,
+        padding: 0,
+        boxSizing: "border-box",
+        minHeight: "100vh",
+      },
+      body: {
+        margin: 0,
+        padding: 0,
+      },
+    },
+  },
   colors: {
     catppuccin: catppuccinColors,
   },
@@ -9,11 +24,11 @@ const theme = extendTheme({
     Button: {
       baseStyle: {
         fontWeight: "bold",
-        borderRadius: 'md',
+        borderRadius: "md",
       },
       sizes: {
         md: {
-          fontSize: 'md',
+          fontSize: "md",
           px: 4,
           py: 2,
         },
@@ -22,8 +37,7 @@ const theme = extendTheme({
         solid: {
           bg: "catppuccin.blue",
           color: "white",
-          _hover: { bg: "catppuccin.sapphire",
-          },
+          _hover: { bg: "catppuccin.sapphire" },
         },
         outline: {
           border: "2px solid",

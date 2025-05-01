@@ -1,6 +1,6 @@
 import { Flex } from "@chakra-ui/react";
-import Header from "./../header/Header.jsx";
-import TickerBar from "./../ticker/TickerBar.jsx";
+import Header from "../layout/header/Header";
+import TickerBar from "../layout/ticker/TickerBar";
 
 function Landing() {
   return (

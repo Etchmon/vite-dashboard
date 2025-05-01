@@ -8,7 +8,7 @@ import {
   SimpleGrid,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import { getTopCoins } from "../../services/geckoService.js";
+import { getTopCoins } from "../../services/geckoService";
 import { Link as RouterLink } from "react-router-dom";
 import axios from "axios";
 
@@ -33,7 +33,7 @@ const CoinLists = () => {
               }`
             );
 
-            const prices = response.data.prices.map(([_, price]) => price);
+            const prices = response.data.prices.map(([, price]) => price);
             const priceChanges = prices
               .slice(1)
               .map((price, i) => ((price - prices[i]) / prices[i]) * 100);

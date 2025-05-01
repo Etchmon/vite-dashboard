@@ -1,6 +1,6 @@
 import { Box, Text, Flex, keyframes } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import { getTopCoins } from "../../services/geckoService.js";
+import { getTopCoins } from "../../../services/geckoService";
 
 const TickerBar = () => {
   const [coins, setCoins] = useState([]);

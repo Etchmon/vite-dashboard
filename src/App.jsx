@@ -1,9 +1,9 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { Box, Flex } from "@chakra-ui/react";
-import Navbar from "./components/nav/Navbar";
-import Landing from "./components/main/Landing";
-import CoinLists from "./components/main/CoinLists";
-import CoinDetail from "./components/coin/CoinDetail";
+import Navbar from "./components/layout/nav/Navbar";
+import Landing from "./components/sections/Landing";
+import CoinLists from "./components/sections/CoinLists";
+import CoinDetail from "./components/cryptocurrency/CoinDetail";
 
 function App() {
   return (
