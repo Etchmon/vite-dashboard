@@ -7,16 +7,24 @@ import {
   StatLabel,
   StatNumber,
 } from "@chakra-ui/react";
+import { Link as RouterLink } from "react-router-dom";
 
 const CoinCard = ({ coin }) => {
-  const { name, symbol, current_price, price_change_percentage_24h } = coin;
+  const { name, symbol, current_price, price_change_percentage_24h, id } = coin;
   return (
     <Box
+      as={RouterLink}
+      to={`/coin/${id}`}
       p={{ base: "4", lg: "2" }}
       boxShadow="md"
       borderRadius="md"
       bg="catpuccin.surface1"
       color="white"
+      _hover={{
+        transform: "scale(1.02)",
+        transition: "transform 0.2s",
+        cursor: "pointer",
+      }}
     >
       <VStack align="start" spacing={3}>
         <HStack justify="space-between" w="full">
