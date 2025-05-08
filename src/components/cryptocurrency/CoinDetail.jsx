@@ -1,12 +1,10 @@
 import {
   Box,
-  Heading,
   Text,
   VStack,
   HStack,
   Spinner,
   useMediaQuery,
-  Center,
 } from "@chakra-ui/react";
 import { useEffect, useState, useRef, useMemo } from "react";
 import {
@@ -19,13 +17,11 @@ import {
   AreaChart,
 } from "recharts";
 import { useParams } from "react-router-dom";
-import axios from "axios";
-
-const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes in milliseconds
+import { fetchCoinMarketChart } from "../../services/geckoService";
 
 const CoinDetail = () => {
   const { coinId } = useParams();
-  const [coinData, setCoinData] = useState(null);
+  const [chartData, setChartData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isMobile] = useMediaQuery("(max-width: 768px)");
@@ -74,57 +70,27 @@ const CoinDetail = () => {
   }, []);
 
   useEffect(() => {
-    const fetchCoinData = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Check cache first
-        const cacheKey = `coin-${coinId}-data`;
-        const cachedData = localStorage.getItem(cacheKey);
-        if (cachedData) {
-          const { data, timestamp } = JSON.parse(cachedData);
-          if (Date.now() - timestamp < CACHE_DURATION) {
-            setCoinData(data);
-            setLoading(false);
-            return;
-          }
-        }
+        const data = await fetchCoinMarketChart(coinId, 7);
 
-        const apiKey = import.meta.env.VITE_API_KEY;
-        const response = await axios.get(
-          `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=7&interval=daily`,
-          {
-            headers: {
-              "x-cg-demo-api-key": apiKey,
-            },
-          }
-        );
-
-        if (!response.data?.prices) {
+        if (!data?.prices) {
           throw new Error("Invalid data received from API");
         }
 
-        const prices = response.data.prices.map(([timestamp, price]) => ({
+        const prices = data.prices.map(([timestamp, price]) => ({
           timestamp: new Date(timestamp).toLocaleDateString(),
           price: price,
         }));
 
-        // Cache the data
-        localStorage.setItem(
-          cacheKey,
-          JSON.stringify({
-            data: prices,
-            timestamp: Date.now(),
-          })
-        );
-
-        setCoinData(prices);
+        setChartData(prices);
       } catch (err) {
         console.error("Error fetching coin data:", err);
         setError(
-          err.response?.data?.error ||
-            "Failed to fetch coin data. Please try again later."
+          err.message || "Failed to fetch coin data. Please try again later."
         );
       } finally {
         setLoading(false);
@@ -132,23 +98,23 @@ const CoinDetail = () => {
     };
 
     if (coinId) {
-      fetchCoinData();
+      fetchData();
     }
   }, [coinId]);
 
   // Memoize price calculations
   const { currentPrice, priceChange } = useMemo(() => {
-    if (!coinData?.length) return { currentPrice: 0, priceChange: 0 };
+    if (!chartData?.length) return { currentPrice: 0, priceChange: 0 };
 
-    const firstPrice = coinData[0].price;
-    const lastPrice = coinData[coinData.length - 1].price;
+    const firstPrice = chartData[0].price;
+    const lastPrice = chartData[chartData.length - 1].price;
     const change = ((lastPrice - firstPrice) / firstPrice) * 100;
 
     return {
       currentPrice: lastPrice,
       priceChange: change,
     };
-  }, [coinData]);
+  }, [chartData]);
 
   if (loading) {
     return (
@@ -166,7 +132,7 @@ const CoinDetail = () => {
     );
   }
 
-  if (!coinData?.length) {
+  if (!chartData?.length) {
     return (
       <Box p={4} textAlign="center">
         <Text color="red.500">No data available for this coin</Text>
@@ -175,57 +141,23 @@ const CoinDetail = () => {
   }
 
   // Calculate min and max values for y-axis with padding
-  const minPrice = Math.min(...coinData.map((d) => d.price));
-  const maxPrice = Math.max(...coinData.map((d) => d.price));
+  const minPrice = Math.min(...chartData.map((d) => d.price));
+  const maxPrice = Math.max(...chartData.map((d) => d.price));
   const priceRange = maxPrice - minPrice;
   const yAxisPadding = priceRange * 0.1;
 
   return (
-    <Box p={{ base: 0, md: 4 }}>
+    <Box p={4}>
       <VStack spacing={4} align="stretch">
-        <Heading size="lg" textTransform="capitalize" px={{ base: 4, md: 0 }}>
-          {coinId}
-        </Heading>
-
-        <HStack justify="space-between" px={{ base: 4, md: 0 }}>
-          <Text fontSize="lg" fontWeight="medium">
-            Weekly Chart
-          </Text>
-          <Text
-            fontSize="lg"
-            fontWeight="medium"
-            color={priceChange >= 0 ? "green.500" : "red.500"}
-          >
-            {priceChange >= 0 ? "+" : ""}
-            {priceChange.toFixed(2)}%
-          </Text>
-        </HStack>
-
         <Box
           ref={containerRef}
           height={chartConfig.height}
           width="100%"
           position="relative"
-          minWidth={isMobile ? "350px" : "800px"}
-          maxWidth="100%"
-          bg="white"
-          borderRadius="md"
-          boxShadow="sm"
-          overflow="hidden"
         >
-          {!isChartReady ? (
-            <Center height="100%">
-              <Spinner size="xl" color="blue.500" />
-            </Center>
-          ) : (
+          {isChartReady && (
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={coinData}
-                margin={chartConfig.margin}
-                width={
-                  containerRef.current?.getBoundingClientRect().width || 800
-                }
-              >
+              <AreaChart data={chartData} margin={chartConfig.margin}>
                 <defs>
                   <linearGradient
                     id="priceGradient"
@@ -234,21 +166,22 @@ const CoinDetail = () => {
                     x2="0"
                     y2="1"
                   >
-                    <stop offset="5%" stopColor="#3182CE" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#3182CE" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#3182CE" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#3182CE" stopOpacity={0.1} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="#4A5568"
+                  opacity={0.2}
+                />
                 <XAxis
                   dataKey="timestamp"
-                  angle={45}
-                  textAnchor="start"
-                  height={60}
                   tick={{ fontSize: chartConfig.fontSize, fill: "#4A5568" }}
                   label={{
                     value: "Date",
                     position: "bottom",
-                    offset: 50,
+                    offset: 40,
                     fontSize: chartConfig.labelFontSize,
                     fill: "#4A5568",
                   }}
@@ -291,6 +224,10 @@ const CoinDetail = () => {
 
         <HStack justify="space-between" px={{ base: 4, md: 0 }}>
           <Text>Current Price: ${currentPrice.toFixed(2)}</Text>
+          <Text color={priceChange >= 0 ? "green.500" : "red.500"}>
+            {priceChange >= 0 ? "+" : ""}
+            {priceChange.toFixed(2)}%
+          </Text>
         </HStack>
       </VStack>
     </Box>

@@ -1,6 +1,6 @@
 import { SimpleGrid, Box, Spinner, Alert, AlertIcon } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import { getTopCoins } from "../../../services/geckoService";
+import { fetchTopCoins } from "../../../services/geckoService";
 import CoinCard from "./CoinCard";
 
 const CoinList = () => {
@@ -11,10 +11,10 @@ const CoinList = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await getTopCoins();
+        const data = await fetchTopCoins();
         setCoins(data);
       } catch (error) {
-        setError(error);
+        setError(error.message || "Failed to fetch coin data");
       } finally {
         setLoading(false);
       }
@@ -31,7 +31,7 @@ const CoinList = () => {
     return (
       <Alert status="error">
         <AlertIcon />
-        There was an error processing your request.
+        {error}
       </Alert>
     );
   }

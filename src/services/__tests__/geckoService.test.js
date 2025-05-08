@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fetchTopCoins, getTopCoins, getCacheStatus } from "../geckoService";
+import {
+  fetchTopCoins,
+  getTopCoins,
+  getCacheStatus,
+  getServiceStatus,
+} from "../geckoService";
 
 // Mock fetch globally for all tests
 const mockFetch = vi.fn();
@@ -135,5 +140,49 @@ describe("geckoService", () => {
       const result = await getTopCoins();
       expect(result).toEqual(mockData);
     });
+  });
+});
+
+describe("fetchTopCoins", () => {
+  beforeEach(() => {
+    mockFetch.mockClear();
+  });
+
+  it("should fetch top coins successfully", async () => {
+    const mockData = [
+      { id: "bitcoin", symbol: "btc", name: "Bitcoin" },
+      { id: "ethereum", symbol: "eth", name: "Ethereum" },
+    ];
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(mockData),
+    });
+
+    const result = await fetchTopCoins();
+    expect(result).toEqual(mockData);
+  });
+
+  it("should handle API errors", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      statusText: "Rate limit exceeded",
+    });
+
+    await expect(fetchTopCoins()).rejects.toThrow("API request failed");
+  });
+
+  it("should handle network errors", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("Network error"));
+
+    await expect(fetchTopCoins()).rejects.toThrow("Network error occurred");
+  });
+});
+
+describe("getServiceStatus", () => {
+  it("should return service status", () => {
+    const status = getServiceStatus();
+    expect(status).toHaveProperty("cache");
+    expect(status).toHaveProperty("rateLimit");
   });
 });

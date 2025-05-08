@@ -1,15 +1,16 @@
 import { Box, Text, Flex, keyframes } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import { getTopCoins } from "../../../services/geckoService";
+import { fetchTopCoins } from "../../../services/geckoService";
 
 const TickerBar = () => {
   const [coins, setCoins] = useState([]);
   const [duration, setDuration] = useState(12);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await getTopCoins();
+        const data = await fetchTopCoins();
         setCoins(data);
 
         // Calculate duration based on the number of coins
@@ -17,6 +18,7 @@ const TickerBar = () => {
         setDuration(coinCount * 4);
       } catch (error) {
         console.error("Error fetching data:", error);
+        setError(error.message);
       }
     };
 
@@ -30,7 +32,11 @@ const TickerBar = () => {
     100% {
         transform: translateX(-50%);
     }
-`;
+  `;
+
+  if (error) {
+    return null; // Hide ticker on error
+  }
 
   return (
     <Box

@@ -1,6 +1,6 @@
 # Vite Dashboard
 
-A modern cryptocurrency dashboard built with React, Vite, and Material-UI.
+A modern cryptocurrency dashboard built with React, Vite, and Chakra UI.
 
 ## Project Overview
 
@@ -18,9 +18,8 @@ This project is a cryptocurrency dashboard that provides real-time data visualiz
 ### UI Libraries
 
 - **Chakra UI**: Primary UI component library
-- **Material-UI**: Secondary UI components and charts
+- **Recharts**: Charting library for data visualization
 - **Framer Motion**: Animation library
-- **@mui/x-charts**: Advanced charting components
 
 ### Development Tools
 
@@ -50,21 +49,22 @@ src/
 
 ### Data Visualization
 
-- Interactive line charts for price history
-- Real-time market data updates
+- Interactive area charts for price history
+- Weekly price data visualization
 - Responsive chart layouts for mobile and desktop
+- Price change indicators with color coding
 
 ### Security
 
 - API key management through environment variables
 - Secure data fetching with Axios
-- Error handling and rate limiting
+- Error handling and user feedback
 
 ### Performance
 
-- Code splitting for optimized loading
+- Data caching with localStorage
 - Responsive design for all screen sizes
-- Efficient data caching
+- Efficient data fetching and state management
 
 ## Data Flow
 
@@ -72,12 +72,12 @@ src/
 
    - CoinGecko API for cryptocurrency data
    - Environment variables for API keys
-   - Axios for HTTP requests
+   - Axios for HTTP requests with proper headers
 
 2. **State Management**
 
    - React hooks for local state
-   - Context API for global state
+   - Memoization for performance optimization
    - Custom hooks for data fetching
 
 3. **Component Architecture**
@@ -87,81 +87,121 @@ src/
 
 ## Theme System
 
-The application uses a dual theme system:
+The application uses Chakra UI for theming and styling:
 
-- **Chakra UI Theme**: Primary theme for UI components
-- **Material-UI Theme**: Secondary theme for charts and specific components
-
-Theme configuration is located in `src/theme/`:
-
-- `colors.js`: Color palette definitions
-- `muiTheme.js`: Material-UI theme configuration
+- **Chakra UI Theme**: Primary theme for all UI components
+- **Custom Chart Styling**: Tailored styles for Recharts components
 
 ## Development
 
 ### Getting Started
 
 1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
+2. Install dependencies: `npm install`
+3. Create a `.env` file with your CoinGecko API key:
    ```
-3. Create a `.env` file with your API keys
-4. Start the development server:
-   ```bash
-   npm run dev
+   VITE_API_KEY=your_api_key_here
    ```
+4. Start the development server: `npm run dev`
 
-### Scripts
+### Available Scripts
 
 - `npm run dev`: Start development server
 - `npm run build`: Build for production
 - `npm run lint`: Run ESLint
-- `npm test`: Run tests
-- `npm run test:coverage`: Run tests with coverage
-- `npm run test:ui`: Run tests with UI
+- `npm run test`: Run tests
 
-## Testing
+## Future Improvements
 
-The project uses Vitest and Testing Library for testing:
+### Performance Enhancements
 
-- Component testing
-- API integration testing
-- UI interaction testing
+- Implement virtual scrolling for long lists
+- Add service worker for offline support
+- Optimize bundle size with better code splitting
 
-## Best Practices
+### Feature Additions
 
-1. **Code Organization**
+- Add multiple time range charts (24h, weekly, monthly)
+- Implement price alerts and notifications
+- Add more detailed coin information
+- Include trading volume data
+- Add comparison charts between different coins
 
-   - Component-based architecture
-   - Separation of concerns
-   - Reusable components
+### User Experience
 
-2. **Performance**
+- Add loading skeletons for better perceived performance
+- Implement error boundaries for better error handling
+- Add tooltips with more detailed information
+- Improve mobile responsiveness
 
-   - Lazy loading
-   - Code splitting
-   - Efficient data fetching
+### Technical Improvements
 
-3. **Security**
+- Implement proper TypeScript support
+- Add comprehensive test coverage
+- Set up CI/CD pipeline
+- Add performance monitoring
+- Implement proper state management solution (e.g., Redux or Zustand)
 
-   - Environment variables for sensitive data
-   - API rate limiting
-   - Error handling
+### Security Enhancements
 
-4. **Accessibility**
-   - ARIA attributes
-   - Keyboard navigation
-   - Screen reader support
+- Implement proper rate limiting
+- Add request retry logic
+- Improve error handling and user feedback
+- Add proper input validation
+
+### Data Management
+
+- Implement proper data caching strategy
+- Add data persistence
+- Implement proper data synchronization
+- Add data backup and recovery
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Smart Caching System
+
+The dashboard implements an advanced caching system to optimize API usage and provide a smooth user experience:
+
+### Cache Features
+
+- **Memory & Storage Caching**: Two-layer caching system using both memory and localStorage
+- **Stale-While-Revalidate**: Serves stale data while refreshing in the background
+- **Background Refresh**: Automatically updates data every minute without blocking the UI
+- **Rate Limit Protection**: Prevents API rate limit issues with smart request management
+
+### Cache Configuration
+
+```javascript
+{
+  duration: 60000, // 1 minute cache duration
+  staleWhileRevalidate: true, // Serve stale data while refreshing
+  backgroundRefresh: true // Enable background updates
+}
+```
+
+### Rate Limiting
+
+- Maximum 10 requests per minute
+- Automatic request queuing
+- Smart retry mechanism with exponential backoff
+
+## API Integration
+
+The dashboard uses the CoinGecko API with the following features:
+
+- Smart caching to minimize API calls
+- Rate limit protection
+- Error handling and retries
+- Background data refresh
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [CoinGecko API](https://www.coingecko.com/en/api) for cryptocurrency data
+- [Chakra UI](https://chakra-ui.com/) for the component library
+- [Recharts](https://recharts.org/) for the charting library

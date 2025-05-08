@@ -9,7 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { getTopCoins } from "../../services/geckoService";
+import { fetchTopCoins } from "../../services/geckoService";
 
 const timeRanges = {
   "1H": { days: 1 },
@@ -29,7 +29,7 @@ const CryptoChart = () => {
   useEffect(() => {
     const fetchCoins = async () => {
       try {
-        const data = await getTopCoins();
+        const data = await fetchTopCoins();
         setCoins(data);
         setSelectedCoin(data[0]); // Default to the first coin
       } catch (error) {

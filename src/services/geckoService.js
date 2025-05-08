@@ -1,38 +1,10 @@
 // src/services/geckoService.js
 
-import { securityConfig } from "../config/security";
-
-// Configuration and Constants
-const apiKey = import.meta.env.VITE_API_KEY;
-const cache = new Map();
-const cacheKey = "topCoins";
-const fetchInterval = 2 * 60 * 1000; // 2 minutes
-const MAX_REQUESTS_PER_MINUTE = 10; // CoinGecko free tier limit
-const requestTimestamps = [];
-
-// Rate Limiting Logic
-// - Track timestamps of recent requests
-// - Remove timestamps older than 1 minute
-// - Throw error if we've hit the rate limit
-const checkRateLimit = () => {
-  const now = Date.now();
-  const oneMinuteAgo = now - 60 * 1000;
-
-  // Remove old timestamps
-  while (requestTimestamps.length > 0 && requestTimestamps[0] < oneMinuteAgo) {
-    requestTimestamps.shift();
-  }
-
-  // Check if we've hit the limit
-  if (requestTimestamps.length >= MAX_REQUESTS_PER_MINUTE) {
-    throw new Error("Rate limit exceeded. Please try again later.");
-  }
-
-  requestTimestamps.push(now);
-};
+import { API_CONFIG } from "../config/api";
+import { cacheService } from "./cacheService";
+import { rateLimiter } from "./rateLimiter";
 
 // Custom Error Class for API Errors
-// - Includes status code and response data
 class APIError extends Error {
   constructor(message, status, data) {
     super(message);
@@ -41,23 +13,6 @@ class APIError extends Error {
     this.data = data;
   }
 }
-
-// Input validation function
-const validateCoinId = (coinId) => {
-  if (!coinId || typeof coinId !== "string") {
-    throw new APIError("Invalid coin ID", 400);
-  }
-
-  if (coinId.length > securityConfig.validation.maxCoinIdLength) {
-    throw new APIError("Coin ID too long", 400);
-  }
-
-  if (!securityConfig.validation.allowedCoinIdChars.test(coinId)) {
-    throw new APIError("Invalid characters in coin ID", 400);
-  }
-
-  return true;
-};
 
 // Request timeout function
 const timeoutPromise = (ms, promise) => {
@@ -78,33 +33,42 @@ const timeoutPromise = (ms, promise) => {
   });
 };
 
+// Retry function
+const retry = async (
+  fn,
+  retries = API_CONFIG.retryAttempts,
+  delay = API_CONFIG.retryDelay
+) => {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries === 0) throw error;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    return retry(fn, retries - 1, delay);
+  }
+};
+
 // Main API Fetch Function
-// - Makes request to CoinGecko API
-// - Handles rate limiting
-// - Validates response
-// - Caches successful responses
-export const fetchTopCoins = async () => {
-  const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&x_cg_demo_api_key=${apiKey}`;
+const fetchFromAPI = async (endpoint, options = {}) => {
+  if (!rateLimiter.canMakeRequest()) {
+    const waitTime = rateLimiter.getWaitTime();
+    throw new APIError(`Rate limit exceeded. Please wait ${waitTime}ms`, 429);
+  }
 
   try {
-    // Check rate limit before making request
-    checkRateLimit();
-
-    console.log("Fetching top coins from API at", new Date().toISOString());
+    rateLimiter.addRequest();
 
     const response = await timeoutPromise(
-      securityConfig.api.timeout,
-      fetch(url, {
+      API_CONFIG.timeout,
+      fetch(`${API_CONFIG.baseURL}${endpoint}`, {
+        ...options,
         headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          // Add security headers
-          ...securityConfig.headers,
+          ...API_CONFIG.headers,
+          ...options.headers,
         },
       })
     );
 
-    // Handle non-200 responses
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new APIError(
@@ -114,101 +78,50 @@ export const fetchTopCoins = async () => {
       );
     }
 
-    const data = await response.json();
-
-    // Validate data structure
-    if (!Array.isArray(data) || data.length === 0) {
-      throw new APIError("Invalid data structure received from API", 500);
-    }
-
-    // Cache successful response
-    cache.set(cacheKey, {
-      data,
-      timestamp: Date.now(),
-      requestCount: requestTimestamps.length,
-    });
-
-    return data;
+    return await response.json();
   } catch (error) {
-    console.error("Error fetching data:", error);
-    if (error instanceof APIError) {
-      throw error;
-    }
+    if (error instanceof APIError) throw error;
     throw new APIError("Network error occurred", 0, {
       originalError: error.message,
     });
   }
 };
 
-// Fetch coin details with validation
+// Fetch top coins with caching
+export const fetchTopCoins = async () => {
+  const cacheKey = "top_coins";
+
+  return cacheService.get(cacheKey, () =>
+    retry(() =>
+      fetchFromAPI(
+        "/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1"
+      )
+    )
+  );
+};
+
+// Fetch coin details with caching
 export const fetchCoinDetails = async (coinId) => {
-  try {
-    validateCoinId(coinId);
+  const cacheKey = `coin_${coinId}`;
 
-    const url = `https://api.coingecko.com/api/v3/coins/${coinId}?x_cg_demo_api_key=${apiKey}`;
-
-    const response = await timeoutPromise(
-      securityConfig.api.timeout,
-      fetch(url, {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          ...securityConfig.headers,
-        },
-      })
-    );
-
-    if (!response.ok) {
-      throw new APIError(
-        `Failed to fetch coin details: ${response.statusText}`,
-        response.status
-      );
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching coin details:", error);
-    throw error;
-  }
+  return cacheService.get(cacheKey, () =>
+    retry(() => fetchFromAPI(`/coins/${coinId}`))
+  );
 };
 
-// Initial fetch on module load
-fetchTopCoins();
+// Fetch coin market chart with caching
+export const fetchCoinMarketChart = async (coinId, days = 7) => {
+  const cacheKey = `chart_${coinId}_${days}`;
 
-// Set up interval to refresh data
-setInterval(fetchTopCoins, fetchInterval);
-
-// Public API for getting coin data
-// - Returns cached data if available and fresh
-// - Fetches new data if cache is empty or stale
-export const getTopCoins = async () => {
-  const cached = cache.get(cacheKey);
-  const now = Date.now();
-
-  // Return cached data if it's fresh
-  if (cached && now - cached.timestamp < fetchInterval) {
-    console.log(
-      "Using cached data from:",
-      new Date(cached.timestamp).toISOString(),
-      "Request count:",
-      cached.requestCount
-    );
-    return cached.data;
-  }
-
-  // Fetch new data if cache is stale or empty
-  console.log("Cache expired or not found, fetching fresh data");
-  return fetchTopCoins();
+  return cacheService.get(cacheKey, () =>
+    retry(() =>
+      fetchFromAPI(`/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`)
+    )
+  );
 };
 
-// Monitoring Functions
-export const getRequestCount = () => requestTimestamps.length;
-export const getCacheStatus = () => {
-  const cached = cache.get(cacheKey);
-  return {
-    hasData: !!cached,
-    timestamp: cached?.timestamp,
-    requestCount: cached?.requestCount,
-    currentRequests: requestTimestamps.length,
-  };
-};
+// Get service status
+export const getServiceStatus = () => ({
+  cache: cacheService.getStatus(),
+  rateLimit: rateLimiter.getStatus(),
+});

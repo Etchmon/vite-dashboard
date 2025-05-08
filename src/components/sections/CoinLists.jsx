@@ -8,7 +8,7 @@ import {
   SimpleGrid,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import { getTopCoins } from "../../services/geckoService";
+import { fetchTopCoins } from "../../services/geckoService";
 import { Link as RouterLink } from "react-router-dom";
 import axios from "axios";
 
@@ -19,7 +19,7 @@ const CoinLists = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await getTopCoins();
+        const data = await fetchTopCoins();
         setCoins(data);
 
         // Fetch volatility data for each coin
