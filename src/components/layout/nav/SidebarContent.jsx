@@ -1,8 +1,17 @@
-import { Box, Link as ChakraLink } from "@chakra-ui/react";
-import { Link as RouterLink } from "react-router-dom";
+import { Box, Link as ChakraLink, Button } from "@chakra-ui/react";
+import { useNavigate } from "react-router-dom";
 import CoinList from "./CoinList";
 
-const SidebarContent = () => {
+const SidebarContent = ({ onClose }) => {
+  const navigate = useNavigate();
+
+  const handleHeaderClick = () => {
+    if (onClose) {
+      onClose();
+    }
+    navigate("/");
+  };
+
   return (
     <Box
       bg="catppuccin.base"
@@ -11,21 +20,33 @@ const SidebarContent = () => {
       height="100vh"
       overflowY="auto"
     >
-      <ChakraLink
-        as={RouterLink}
-        to="/"
-        color="white"
-        fontSize="lg"
-        fontWeight="bold"
-        p={4}
-        textAlign="center"
-        display="block"
-        _hover={{ textDecoration: "none", opacity: 0.8 }}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={4}
       >
-        Top Crypto Coins
-      </ChakraLink>
+        <ChakraLink
+          onClick={handleHeaderClick}
+          color="white"
+          fontSize="lg"
+          fontWeight="bold"
+          _hover={{ textDecoration: "none", opacity: 0.8 }}
+          cursor="pointer"
+        >
+          Top Crypto Coins
+        </ChakraLink>
+        <Button
+          colorScheme="red"
+          size="sm"
+          onClick={onClose}
+          display={{ base: "block", lg: "none" }}
+        >
+          Close Menu
+        </Button>
+      </Box>
       <Box flex="1" overflowY="auto" pb={20}>
-        <CoinList />
+        <CoinList onClose={onClose} />
       </Box>
     </Box>
   );

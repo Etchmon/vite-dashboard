@@ -57,6 +57,11 @@ const fetchFromAPI = async (endpoint, options = {}) => {
 
   try {
     rateLimiter.addRequest();
+    console.log("Making API request to:", `${API_CONFIG.baseURL}${endpoint}`);
+    console.log("With headers:", {
+      ...API_CONFIG.headers,
+      ...options.headers,
+    });
 
     const response = await timeoutPromise(
       API_CONFIG.timeout,
@@ -71,6 +76,11 @@ const fetchFromAPI = async (endpoint, options = {}) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      console.error("API request failed:", {
+        status: response.status,
+        statusText: response.statusText,
+        errorData,
+      });
       throw new APIError(
         `API request failed: ${response.statusText}`,
         response.status,
@@ -78,9 +88,12 @@ const fetchFromAPI = async (endpoint, options = {}) => {
       );
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log("API response:", data);
+    return data;
   } catch (error) {
     if (error instanceof APIError) throw error;
+    console.error("Network error:", error);
     throw new APIError("Network error occurred", 0, {
       originalError: error.message,
     });

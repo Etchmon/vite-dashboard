@@ -1,7 +1,7 @@
 import { Box, Flex } from "@chakra-ui/react";
 import SidebarContent from "./SidebarContent.jsx";
 
-function Navbar() {
+function Navbar({ isOpen, onClose }) {
   return (
     <Box>
       {/* Main Container */}
@@ -16,10 +16,11 @@ function Navbar() {
           top={0}
           left={0}
           overflowY="auto"
-          display={{ base: "none", lg: "block" }}
+          display={{ base: isOpen ? "block" : "none", lg: "block" }}
           zIndex={{ base: "overlay", lg: "auto" }}
+          transition="all 0.3s ease-in-out"
         >
-          <SidebarContent />
+          <SidebarContent onClose={onClose} />
         </Box>
       </Flex>
     </Box>

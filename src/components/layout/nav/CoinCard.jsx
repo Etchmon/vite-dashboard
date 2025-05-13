@@ -7,14 +7,22 @@ import {
   StatLabel,
   StatNumber,
 } from "@chakra-ui/react";
-import { Link as RouterLink } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-const CoinCard = ({ coin }) => {
+const CoinCard = ({ coin, onClose }) => {
   const { name, symbol, current_price, price_change_percentage_24h, id } = coin;
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (onClose) {
+      onClose();
+    }
+    navigate(`/coin/${id}`);
+  };
+
   return (
     <Box
-      as={RouterLink}
-      to={`/coin/${id}`}
+      onClick={handleClick}
       p={{ base: "4", lg: "2" }}
       boxShadow="md"
       borderRadius="md"
