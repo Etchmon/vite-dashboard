@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 import { ChakraProvider } from "@chakra-ui/react";
 import { HelmetProvider, Helmet } from "react-helmet-async";
 import App from "./App";
-import theme from "./theme";
+import theme from "./theme/index.js";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

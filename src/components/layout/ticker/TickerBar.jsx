@@ -32,7 +32,7 @@ const TickerBar = () => {
     100% {
         transform: translateX(-50%);
     }
-  `;
+`;
 
   if (error) {
     return null; // Hide ticker on error

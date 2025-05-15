@@ -1,30 +1,56 @@
-import { Box, Flex } from "@chakra-ui/react";
-import SidebarContent from "./SidebarContent.jsx";
+import { Box, Flex, useColorMode, Button, VStack } from "@chakra-ui/react";
+import { MoonIcon, SunIcon } from "@chakra-ui/icons";
+import { useCoins } from "../../../context/CoinContext";
+import SidebarContent from "./SidebarContent";
+import MobileNav from "./MobileNav";
 
-function Navbar({ isOpen, onClose }) {
+const Navbar = () => {
+  const { colorMode, toggleColorMode } = useColorMode();
+  const { coins, loading } = useCoins();
+
   return (
-    <Box>
-      {/* Main Container */}
-      <Flex>
-        {/* Sidebar */}
-        <Box
-          bg="catppuccin.base"
-          p={4}
-          width={{ base: "100%", lg: "300px" }}
-          height={{ base: "100vh", lg: "100vh" }}
-          position={{ base: "fixed", lg: "fixed" }}
-          top={0}
-          left={0}
-          overflowY="auto"
-          display={{ base: isOpen ? "block" : "none", lg: "block" }}
-          zIndex={{ base: "overlay", lg: "auto" }}
-          transition="all 0.3s ease-in-out"
+    <>
+      <MobileNav />
+
+      <Box
+        as="nav"
+        position="fixed"
+        top={0}
+        left={0}
+        w="300px"
+        h="100vh"
+        bg={colorMode === "light" ? "white" : "gray.800"}
+        borderRight="1px"
+        borderColor={colorMode === "light" ? "gray.200" : "gray.700"}
+        display={{ base: "none", lg: "block" }}
+      >
+        <Flex
+          h="16"
+          alignItems="center"
+          justifyContent="space-between"
+          px={4}
+          borderBottom="1px"
+          borderColor={colorMode === "light" ? "gray.200" : "gray.700"}
         >
-          <SidebarContent onClose={onClose} />
-        </Box>
-      </Flex>
-    </Box>
+          <Button
+            as="a"
+            href="/"
+            variant="ghost"
+            fontWeight="bold"
+            fontSize="lg"
+          >
+            Crypto Dashboard
+          </Button>
+          <Button onClick={toggleColorMode} variant="ghost">
+            {colorMode === "light" ? <MoonIcon /> : <SunIcon />}
+          </Button>
+        </Flex>
+        <VStack spacing={4} align="stretch" p={4}>
+          <SidebarContent coins={coins} loading={loading} />
+        </VStack>
+      </Box>
+    </>
   );
-}
+};
 
 export default Navbar;

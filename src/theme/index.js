@@ -1,56 +1,32 @@
 import { extendTheme } from "@chakra-ui/react";
-import catppuccinColors from "./colors";
 
 const theme = extendTheme({
-  styles: {
-    global: {
-      html: {
-        bg: "catppuccin.base",
-        margin: 0,
-        padding: 0,
-        boxSizing: "border-box",
-        minHeight: "100vh",
-      },
-      body: {
-        margin: 0,
-        padding: 0,
-      },
-    },
+  config: {
+    initialColorMode: "light",
+    useSystemColorMode: true,
   },
   colors: {
-    catppuccin: catppuccinColors,
-  },
-  components: {
-    Button: {
-      baseStyle: {
-        fontWeight: "bold",
-        borderRadius: "md",
-      },
-      sizes: {
-        md: {
-          fontSize: "md",
-          px: 4,
-          py: 2,
-        },
-      },
-      variants: {
-        solid: {
-          bg: "catppuccin.blue",
-          color: "white",
-          _hover: { bg: "catppuccin.sapphire" },
-        },
-        outline: {
-          border: "2px solid",
-          borderColor: "catppuccin.blue",
-          color: "catppuccin.blue",
-          bg: "transparent",
-          _hover: {
-            bg: "catppuccin.sapphire",
-            color: "white",
-          },
-        },
-      },
+    catppuccin: {
+      base: "#1e1e2e",
+      text: "#cdd6f4",
+      subtext: "#a6adc8",
+      overlay: "#6c7086",
+      surface: "#313244",
+      surface2: "#45475a",
+      blue: "#89b4fa",
+      red: "#f38ba8",
+      green: "#a6e3a1",
+      yellow: "#f9e2af",
+      purple: "#cba6f7",
     },
+  },
+  styles: {
+    global: (props) => ({
+      body: {
+        bg: props.colorMode === "dark" ? "catppuccin.base" : "gray.50",
+        color: props.colorMode === "dark" ? "catppuccin.text" : "gray.800",
+      },
+    }),
   },
 });
 
