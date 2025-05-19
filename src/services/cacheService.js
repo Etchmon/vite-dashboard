@@ -2,135 +2,128 @@ import { CACHE_CONFIG } from "../config/api";
 
 class CacheService {
   constructor() {
-    this.memory = new Map();
-    this.storage = window.localStorage;
+    this.cache = new Map();
     this.refreshPromises = new Map();
+    this.storageKey = CACHE_CONFIG.storageKey;
+    this.duration = CACHE_CONFIG.duration;
+    this.staleWhileRevalidate = CACHE_CONFIG.staleWhileRevalidate;
+    this.backgroundRefresh = CACHE_CONFIG.backgroundRefresh;
+    this.loadFromStorage();
   }
 
-  getKey(key) {
-    return `${CACHE_CONFIG.storageKey}_${key}`;
+  loadFromStorage() {
+    try {
+      const stored = localStorage.getItem(this.storageKey);
+      if (stored) {
+        const { cache, timestamp } = JSON.parse(stored);
+        if (Date.now() - timestamp < this.duration) {
+          this.cache = new Map(Object.entries(cache));
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to load cache from storage:", error);
+    }
+  }
+
+  saveToStorage() {
+    try {
+      const cache = Object.fromEntries(this.cache);
+      localStorage.setItem(
+        this.storageKey,
+        JSON.stringify({
+          cache,
+          timestamp: Date.now(),
+        })
+      );
+    } catch (error) {
+      console.warn("Failed to save cache to storage:", error);
+    }
   }
 
   async get(key, fetchFn) {
-    const fullKey = this.getKey(key);
+    const cached = this.cache.get(key);
 
-    // Try memory first
-    if (this.memory.has(fullKey)) {
-      const cached = this.memory.get(fullKey);
-      const isStale = Date.now() - cached.timestamp > CACHE_CONFIG.duration;
+    if (cached) {
+      const isStale = Date.now() - cached.timestamp > this.duration;
 
-      // If we have stale data and background refresh is enabled
-      if (isStale && CACHE_CONFIG.backgroundRefresh) {
-        // Start background refresh if not already in progress
-        if (!this.refreshPromises.has(fullKey)) {
-          this.refreshPromises.set(
-            fullKey,
-            this.refreshData(key, fetchFn).finally(() => {
-              this.refreshPromises.delete(fullKey);
-            })
-          );
-        }
-
-        // Return stale data while refreshing
-        if (CACHE_CONFIG.staleWhileRevalidate) {
-          return cached.data;
-        }
+      if (!isStale) {
+        return cached.data;
       }
 
-      // Return fresh data
-      if (!isStale) {
+      if (this.staleWhileRevalidate) {
+        // Return stale data immediately and refresh in background
+        this.refreshInBackground(key, fetchFn);
         return cached.data;
       }
     }
 
-    // Try storage
-    try {
-      const stored = this.storage.getItem(fullKey);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        const isStale = Date.now() - parsed.timestamp > CACHE_CONFIG.duration;
-
-        // If we have stale data and background refresh is enabled
-        if (isStale && CACHE_CONFIG.backgroundRefresh) {
-          // Start background refresh if not already in progress
-          if (!this.refreshPromises.has(fullKey)) {
-            this.refreshPromises.set(
-              fullKey,
-              this.refreshData(key, fetchFn).finally(() => {
-                this.refreshPromises.delete(fullKey);
-              })
-            );
-          }
-
-          // Return stale data while refreshing
-          if (CACHE_CONFIG.staleWhileRevalidate) {
-            this.memory.set(fullKey, parsed);
-            return parsed.data;
-          }
-        }
-
-        // Return fresh data
-        if (!isStale) {
-          this.memory.set(fullKey, parsed);
-          return parsed.data;
-        }
-      }
-    } catch (error) {
-      console.error("Cache storage error:", error);
-    }
-
-    // If we get here, we need to fetch fresh data
+    // If no cached data or not using stale-while-revalidate, fetch fresh data
     return this.refreshData(key, fetchFn);
   }
 
+  async refreshInBackground(key, fetchFn) {
+    // Prevent multiple simultaneous refreshes for the same key
+    if (this.refreshPromises.has(key)) {
+      return this.refreshPromises.get(key);
+    }
+
+    const refreshPromise = (async () => {
+      try {
+        const data = await fetchFn();
+        this.set(key, data);
+      } catch (error) {
+        console.warn(`Cache refresh error for key ${key}:`, error);
+      } finally {
+        this.refreshPromises.delete(key);
+      }
+    })();
+
+    this.refreshPromises.set(key, refreshPromise);
+    return refreshPromise;
+  }
+
   async refreshData(key, fetchFn) {
+    if (typeof fetchFn !== "function") {
+      throw new Error("fetchFn must be a function");
+    }
+
     try {
       const data = await fetchFn();
-      await this.set(key, data);
+      this.set(key, data);
       return data;
     } catch (error) {
-      console.error("Cache refresh error:", error);
+      console.error(`Error fetching data for key ${key}:`, error);
       throw error;
     }
   }
 
-  async set(key, data) {
-    const fullKey = this.getKey(key);
-    const cacheItem = {
+  set(key, data) {
+    this.cache.set(key, {
       data,
       timestamp: Date.now(),
-    };
-
-    // Update memory
-    this.memory.set(fullKey, cacheItem);
-
-    // Update storage
-    try {
-      this.storage.setItem(fullKey, JSON.stringify(cacheItem));
-    } catch (error) {
-      console.error("Cache storage error:", error);
-    }
+    });
+    this.saveToStorage();
   }
 
-  async clear() {
-    this.memory.clear();
-    this.refreshPromises.clear();
-    try {
-      Object.keys(this.storage)
-        .filter((key) => key.startsWith(CACHE_CONFIG.storageKey))
-        .forEach((key) => this.storage.removeItem(key));
-    } catch (error) {
-      console.error("Cache clear error:", error);
-    }
+  delete(key) {
+    this.cache.delete(key);
+    this.saveToStorage();
+  }
+
+  clear() {
+    this.cache.clear();
+    this.saveToStorage();
   }
 
   getStatus() {
     return {
-      memorySize: this.memory.size,
-      storageSize: Object.keys(this.storage).filter((key) =>
-        key.startsWith(CACHE_CONFIG.storageKey)
-      ).length,
-      activeRefreshes: this.refreshPromises.size,
+      size: this.cache.size,
+      keys: Array.from(this.cache.keys()),
+      config: {
+        duration: this.duration,
+        staleWhileRevalidate: this.staleWhileRevalidate,
+        backgroundRefresh: this.backgroundRefresh,
+      },
     };
   }
 }

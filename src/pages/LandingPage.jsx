@@ -8,6 +8,7 @@ import {
   Button,
 } from "@chakra-ui/react";
 import { Link as RouterLink } from "react-router-dom";
+import TickerBar from "../components/layout/ticker/TickerBar";
 
 const Feature = ({ title, description }) => (
   <VStack
@@ -60,6 +61,9 @@ const LandingPage = () => {
             Get Started
           </Button>
         </Box>
+
+        {/* Ticker Bar */}
+        <TickerBar />
 
         {/* Features Section */}
         <Box>

@@ -1,18 +1,15 @@
-import { RATE_LIMIT } from "../config/api";
+import { API_CONFIG } from "../config/api";
 
 class RateLimiter {
   constructor() {
     this.requests = [];
-    this.maxRequests = RATE_LIMIT.maxRequests;
-    this.timeWindow = RATE_LIMIT.timeWindow;
+    this.maxRequests = API_CONFIG.rateLimit.maxRequests;
+    this.timeWindow = API_CONFIG.rateLimit.timeWindow;
+    this.minDelay = API_CONFIG.rateLimit.minDelay;
   }
 
   canMakeRequest() {
-    const now = Date.now();
-    // Remove old requests
-    this.requests = this.requests.filter(
-      (time) => now - time < this.timeWindow
-    );
+    this.cleanup();
     return this.requests.length < this.maxRequests;
   }
 
@@ -21,19 +18,36 @@ class RateLimiter {
   }
 
   getWaitTime() {
-    if (this.canMakeRequest()) return 0;
+    this.cleanup();
+    if (this.requests.length >= this.maxRequests) {
+      const oldestRequest = this.requests[0];
+      const timeSinceOldest = Date.now() - oldestRequest;
+      return Math.max(0, this.timeWindow - timeSinceOldest);
+    }
+    return 0;
+  }
 
+  cleanup() {
     const now = Date.now();
-    const oldestRequest = this.requests[0];
-    return Math.max(0, this.timeWindow - (now - oldestRequest));
+    this.requests = this.requests.filter(
+      (timestamp) => now - timestamp < this.timeWindow
+    );
+  }
+
+  async waitForSlot() {
+    while (!this.canMakeRequest()) {
+      const waitTime = this.getWaitTime();
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
+    }
   }
 
   getStatus() {
+    this.cleanup();
     return {
       currentRequests: this.requests.length,
       maxRequests: this.maxRequests,
       timeWindow: this.timeWindow,
-      waitTime: this.getWaitTime(),
+      oldestRequest: this.requests[0] ? Date.now() - this.requests[0] : 0,
     };
   }
 }

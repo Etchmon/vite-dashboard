@@ -16,8 +16,7 @@ class ErrorBoundary extends React.Component {
       error,
       errorInfo,
     });
-
-    // Log error to your error reporting service
+    // You can also log the error to an error reporting service here
     console.error("Error caught by boundary:", error, errorInfo);
   }
 
@@ -29,32 +28,29 @@ class ErrorBoundary extends React.Component {
           maxW="container.md"
           mx="auto"
           textAlign="center"
-          role="alert"
+          bg="white"
+          borderRadius="lg"
+          boxShadow="md"
         >
           <VStack spacing={4}>
             <Heading size="lg" color="red.500">
-              Something went wrong
+              Oops! Something went wrong
             </Heading>
-            <Text>
-              We apologize for the inconvenience. Please try refreshing the
-              page.
+            <Text color="gray.600">
+              {this.state.error?.message || "An unexpected error occurred"}
             </Text>
-            {process.env.NODE_ENV === "development" && (
-              <Box
-                p={4}
-                bg="gray.100"
-                borderRadius="md"
-                textAlign="left"
-                maxH="200px"
-                overflowY="auto"
-              >
-                <Text fontFamily="mono" fontSize="sm">
-                  {this.state.error && this.state.error.toString()}
-                </Text>
-              </Box>
-            )}
-            <Button colorScheme="blue" onClick={() => window.location.reload()}>
-              Refresh Page
+            <Button
+              colorScheme="blue"
+              onClick={() => {
+                this.setState({
+                  hasError: false,
+                  error: null,
+                  errorInfo: null,
+                });
+                window.location.reload();
+              }}
+            >
+              Try Again
             </Button>
           </VStack>
         </Box>

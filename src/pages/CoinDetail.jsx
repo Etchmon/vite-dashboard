@@ -18,10 +18,14 @@ import {
   TabPanels,
   Tab,
   TabPanel,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
 } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
 import { useCoins } from "../context/CoinContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   LineChart,
   Line,
@@ -32,6 +36,8 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
+import { apiService } from "../services/apiService";
+import ErrorBoundary from "../components/ErrorBoundary";
 
 const CoinDetail = () => {
   const { id } = useParams();
@@ -41,76 +47,157 @@ const CoinDetail = () => {
   const [timeRange, setTimeRange] = useState("1");
   const [chartLoading, setChartLoading] = useState(true);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 0 });
+  const [coinDetails, setCoinDetails] = useState(null);
+  const [error, setError] = useState(null);
 
+  // Memoize the current coin to prevent unnecessary re-renders
+  const coin = useMemo(
+    () => coins.find((c) => c.id === id) || coinDetails,
+    [coins, id, coinDetails]
+  );
+
+  // Memoize the price change color
+  const isPositive = useMemo(
+    () => coin?.price_change_percentage_24h >= 0,
+    [coin?.price_change_percentage_24h]
+  );
+
+  // Memoize the formatted price
+  const formattedPrice = useMemo(
+    () => coin?.current_price.toLocaleString(),
+    [coin?.current_price]
+  );
+
+  // Memoize the formatted market cap
+  const formattedMarketCap = useMemo(
+    () => coin?.market_cap.toLocaleString(),
+    [coin?.market_cap]
+  );
+
+  // Memoize the formatted volume
+  const formattedVolume = useMemo(
+    () => coin?.total_volume.toLocaleString(),
+    [coin?.total_volume]
+  );
+
+  // Memoize the formatted supply
+  const formattedSupply = useMemo(
+    () => coin?.circulating_supply.toLocaleString(),
+    [coin?.circulating_supply]
+  );
+
+  // Memoize the formatted max supply
+  const formattedMaxSupply = useMemo(
+    () => coin?.max_supply?.toLocaleString() || "∞",
+    [coin?.max_supply]
+  );
+
+  // Memoize the chart data
+  const chartData = useMemo(() => historicalData, [historicalData]);
+
+  // Memoize the price range
+  const memoizedPriceRange = useMemo(() => priceRange, [priceRange]);
+
+  // Memoize the chart formatters
+  const formatYAxis = useCallback((value) => {
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `$${(value / 1000).toFixed(1)}K`;
+    }
+    return `$${value.toFixed(2)}`;
+  }, []);
+
+  const formatXAxis = useCallback(
+    (date) => {
+      if (timeRange === "1") {
+        const hasMinutes = date.getMinutes() !== 0;
+        const time = date.toLocaleTimeString([], {
+          hour: "numeric",
+          minute: hasMinutes ? "2-digit" : undefined,
+          hour12: true,
+        });
+        return time.replace(/\s*[AP]M/i, "");
+      }
+      return date.toLocaleDateString([], {
+        month: "short",
+        day: "numeric",
+        hour: timeRange === "7" ? "2-digit" : undefined,
+        minute: timeRange === "7" ? "2-digit" : undefined,
+        hour12: true,
+      });
+    },
+    [timeRange]
+  );
+
+  const formatTooltip = useCallback((value) => {
+    return [`$${value.toLocaleString()}`, "Price"];
+  }, []);
+
+  const formatTooltipLabel = useCallback(
+    (label) => {
+      const date = new Date(label);
+      if (timeRange === "1") {
+        const hasMinutes = date.getMinutes() !== 0;
+        return date.toLocaleTimeString([], {
+          hour: "numeric",
+          minute: hasMinutes ? "2-digit" : undefined,
+          hour12: true,
+        });
+      }
+      return date.toLocaleDateString([], {
+        month: "short",
+        day: "numeric",
+        hour: timeRange === "7" ? "2-digit" : undefined,
+        minute: timeRange === "7" ? "2-digit" : undefined,
+        hour12: true,
+      });
+    },
+    [timeRange]
+  );
+
+  // Fetch coin details if not in the list
+  useEffect(() => {
+    const fetchCoinDetails = async () => {
+      if (!coin) {
+        try {
+          setError(null);
+          const details = await apiService.fetchCoinDetails(id);
+          setCoinDetails(details);
+        } catch (error) {
+          console.error("Error fetching coin details:", error);
+          setError(error.message);
+        }
+      }
+    };
+
+    fetchCoinDetails();
+  }, [id, coin]);
+
+  // Fetch historical data
   useEffect(() => {
     const fetchHistoricalData = async () => {
       setChartLoading(true);
       try {
-        const response = await fetch(
-          `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${timeRange}`
-        );
-        const data = await response.json();
-
-        let formattedData;
-        if (timeRange === "1") {
-          // Get the most recent price point
-          const latestPrice = data.prices[data.prices.length - 1];
-          const latestTime = new Date(latestPrice[0]);
-
-          // Create array of last 24 hours, starting from the most recent time
-          const hours = Array.from({ length: 24 }, (_, i) => {
-            const hour = new Date(latestTime);
-            hour.setHours(latestTime.getHours() - i);
-            hour.setMinutes(0);
-            hour.setSeconds(0);
-            hour.setMilliseconds(0);
-            return hour;
-          }).reverse();
-
-          // Add the most recent price point with exact time
-          hours.push(latestTime);
-
-          // For each hour, find the closest price point
-          formattedData = hours
-            .map((hour) => {
-              const timestamp = hour.getTime();
-              // Find the closest price point that's not in the future
-              const validPrices = data.prices.filter((p) => p[0] <= timestamp);
-              if (validPrices.length === 0) return null;
-
-              const closestPrice = validPrices.reduce((prev, curr) => {
-                return Math.abs(curr[0] - timestamp) <
-                  Math.abs(prev[0] - timestamp)
-                  ? curr
-                  : prev;
-              });
-
-              return {
-                date: hour,
-                price: closestPrice[1],
-              };
-            })
-            .filter(Boolean); // Remove any null entries
-        } else {
-          formattedData = data.prices.map(([timestamp, price]) => ({
-            date: new Date(timestamp),
-            price: price,
-          }));
-        }
-
+        setError(null);
+        const data = await apiService.fetchCoinMarketChart(id, timeRange);
+        const formattedData = data.prices.map(([timestamp, price]) => ({
+          date: new Date(timestamp),
+          price,
+        }));
         setHistoricalData(formattedData);
 
-        // Calculate price range for Y-axis
         const prices = formattedData.map((d) => d.price);
         const min = Math.min(...prices);
         const max = Math.max(...prices);
-        const padding = (max - min) * 0.1; // Add 10% padding
+        const padding = (max - min) * 0.1;
         setPriceRange({
           min: Math.max(0, min - padding),
           max: max + padding,
         });
       } catch (error) {
         console.error("Error fetching historical data:", error);
+        setError(error.message);
       }
       setChartLoading(false);
     };
@@ -118,7 +205,7 @@ const CoinDetail = () => {
     fetchHistoricalData();
   }, [id, timeRange]);
 
-  if (loading) {
+  if (loading && !coin) {
     return (
       <Box textAlign="center" py={12}>
         <Spinner size="xl" />
@@ -126,7 +213,25 @@ const CoinDetail = () => {
     );
   }
 
-  const coin = coins.find((c) => c.id === id);
+  if (error && !coin) {
+    return (
+      <Alert
+        status="error"
+        variant="subtle"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        textAlign="center"
+        height="200px"
+      >
+        <AlertIcon boxSize="40px" mr={0} />
+        <AlertTitle mt={4} mb={1} fontSize="lg">
+          Error Loading Coin
+        </AlertTitle>
+        <AlertDescription maxWidth="sm">{error}</AlertDescription>
+      </Alert>
+    );
+  }
 
   if (!coin) {
     return (
@@ -136,203 +241,146 @@ const CoinDetail = () => {
     );
   }
 
-  const isPositive = coin.price_change_percentage_24h >= 0;
-
-  // Custom Y-axis tick formatter
-  const formatYAxis = (value) => {
-    if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(1)}M`;
-    } else if (value >= 1000) {
-      return `$${(value / 1000).toFixed(1)}K`;
-    }
-    return `$${value.toFixed(2)}`;
-  };
-
-  // Custom X-axis tick formatter
-  const formatXAxis = (date) => {
-    if (timeRange === "1") {
-      return date.toLocaleTimeString([], {
-        hour: "numeric",
-        hour12: true,
-      });
-    }
-    return date.toLocaleDateString([], {
-      month: "short",
-      day: "numeric",
-      hour: timeRange === "7" ? "2-digit" : undefined,
-      minute: timeRange === "7" ? "2-digit" : undefined,
-      hour12: true,
-    });
-  };
-
-  // Custom tooltip formatter
-  const formatTooltip = (value) => {
-    return [`$${value.toLocaleString()}`, "Price"];
-  };
-
-  const formatTooltipLabel = (label) => {
-    const date = new Date(label);
-    if (timeRange === "1") {
-      return date.toLocaleTimeString([], {
-        hour: "numeric",
-        hour12: true,
-      });
-    }
-    return date.toLocaleDateString([], {
-      month: "short",
-      day: "numeric",
-      hour: timeRange === "7" ? "2-digit" : undefined,
-      minute: timeRange === "7" ? "2-digit" : undefined,
-      hour12: true,
-    });
-  };
-
   return (
-    <VStack spacing={8} align="stretch">
-      <Box
-        bg={colorMode === "light" ? "white" : "gray.800"}
-        p={6}
-        rounded="xl"
-        shadow="sm"
-      >
-        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={8}>
-          <Box>
-            <Flex align="center" gap={4} mb={4}>
-              <Image
-                src={coin.image}
-                alt={coin.name}
-                boxSize="48px"
-                objectFit="contain"
-              />
-              <Box>
-                <Heading size="lg">{coin.name}</Heading>
-                <Text color="gray.500">{coin.symbol.toUpperCase()}</Text>
-              </Box>
-            </Flex>
-            <Badge
-              colorScheme={isPositive ? "green" : "red"}
-              fontSize="md"
-              px={3}
-              py={1}
-              rounded="md"
-            >
-              {isPositive ? "+" : ""}
-              {coin.price_change_percentage_24h.toFixed(2)}%
-            </Badge>
-          </Box>
-
-          <SimpleGrid columns={2} spacing={4}>
-            <Stat>
-              <StatLabel>Current Price</StatLabel>
-              <StatNumber>${coin.current_price.toLocaleString()}</StatNumber>
-            </Stat>
-            <Stat>
-              <StatLabel>Market Cap</StatLabel>
-              <StatNumber>${coin.market_cap.toLocaleString()}</StatNumber>
-            </Stat>
-            <Stat>
-              <StatLabel>24h Volume</StatLabel>
-              <StatNumber>${coin.total_volume.toLocaleString()}</StatNumber>
-            </Stat>
-            <Stat>
-              <StatLabel>Circulating Supply</StatLabel>
-              <StatNumber>
-                {coin.circulating_supply.toLocaleString()}
-              </StatNumber>
-              <StatHelpText>
-                Max: {coin.max_supply?.toLocaleString() || "∞"}
-              </StatHelpText>
-            </Stat>
-          </SimpleGrid>
-        </SimpleGrid>
-      </Box>
-
-      {/* Price Chart Section */}
-      <Box
-        bg={colorMode === "light" ? "white" : "gray.800"}
-        p={6}
-        rounded="xl"
-        shadow="sm"
-      >
-        <Tabs
-          onChange={(index) =>
-            setTimeRange(["1", "7", "30", "90", "365"][index])
-          }
+    <ErrorBoundary>
+      <VStack spacing={8} align="stretch">
+        <Box
+          bg={colorMode === "light" ? "white" : "gray.800"}
+          p={6}
+          rounded="lg"
+          shadow="md"
         >
-          <TabList>
-            <Tab>24h</Tab>
-            <Tab>7d</Tab>
-            <Tab>30d</Tab>
-            <Tab>90d</Tab>
-            <Tab>1y</Tab>
-          </TabList>
+          <Flex
+            direction={{ base: "column", md: "row" }}
+            align={{ base: "center", md: "flex-start" }}
+            gap={6}
+          >
+            <Image
+              src={coin.image}
+              alt={coin.name}
+              boxSize="64px"
+              objectFit="contain"
+            />
+            <Box flex="1">
+              <Heading size="lg" mb={2}>
+                {coin.name} ({coin.symbol.toUpperCase()})
+              </Heading>
+              <Text fontSize="2xl" fontWeight="bold" mb={4}>
+                ${formattedPrice}
+              </Text>
+              <Badge
+                colorScheme={isPositive ? "green" : "red"}
+                fontSize="md"
+                px={2}
+                py={1}
+              >
+                {isPositive ? "+" : ""}
+                {coin.price_change_percentage_24h.toFixed(2)}%
+              </Badge>
+            </Box>
+          </Flex>
+        </Box>
 
-          <TabPanels>
-            <TabPanel>
-              {chartLoading ? (
-                <Box textAlign="center" py={12}>
-                  <Spinner size="xl" />
-                </Box>
-              ) : (
-                <Box h="400px">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={historicalData}>
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke={colorMode === "light" ? "#E2E8F0" : "#2D3748"}
-                      />
-                      <XAxis
-                        dataKey="date"
-                        tickFormatter={formatXAxis}
-                        stroke={colorMode === "light" ? "#4A5568" : "#A0AEC0"}
-                        interval="preserveStartEnd"
-                      />
-                      <YAxis
-                        domain={[priceRange.min, priceRange.max]}
-                        tickFormatter={formatYAxis}
-                        stroke={colorMode === "light" ? "#4A5568" : "#A0AEC0"}
-                      />
-                      <Tooltip
-                        formatter={formatTooltip}
-                        labelFormatter={formatTooltipLabel}
-                        contentStyle={{
-                          backgroundColor:
-                            colorMode === "light" ? "white" : "#2D3748",
-                          border: "none",
-                          borderRadius: "8px",
-                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                        }}
-                      />
-                      <ReferenceLine
-                        y={coin.current_price}
-                        stroke={colorMode === "light" ? "#3182CE" : "#63B3ED"}
-                        strokeDasharray="3 3"
-                        label={{
-                          value: "Current Price",
-                          position: "right",
-                          fill: colorMode === "light" ? "#4A5568" : "#A0AEC0",
-                        }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="price"
-                        stroke={colorMode === "light" ? "#3182CE" : "#63B3ED"}
-                        strokeWidth={2}
-                        dot={false}
-                        activeDot={{
-                          r: 4,
-                          fill: colorMode === "light" ? "#3182CE" : "#63B3ED",
-                        }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </Box>
-              )}
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
-      </Box>
-    </VStack>
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
+          <Stat>
+            <StatLabel>Market Cap</StatLabel>
+            <StatNumber>${formattedMarketCap}</StatNumber>
+          </Stat>
+          <Stat>
+            <StatLabel>24h Volume</StatLabel>
+            <StatNumber>${formattedVolume}</StatNumber>
+          </Stat>
+          <Stat>
+            <StatLabel>Circulating Supply</StatLabel>
+            <StatNumber>{formattedSupply}</StatNumber>
+            <StatHelpText>Max: {formattedMaxSupply}</StatHelpText>
+          </Stat>
+          <Stat>
+            <StatLabel>Market Cap Rank</StatLabel>
+            <StatNumber>#{coin.market_cap_rank}</StatNumber>
+          </Stat>
+        </SimpleGrid>
+
+        <Box
+          bg={colorMode === "light" ? "white" : "gray.800"}
+          p={6}
+          rounded="lg"
+          shadow="md"
+        >
+          <Tabs
+            variant="enclosed"
+            onChange={(index) => setTimeRange(String(index + 1))}
+          >
+            <TabList>
+              <Tab>24h</Tab>
+              <Tab>7d</Tab>
+              <Tab>30d</Tab>
+              <Tab>1y</Tab>
+            </TabList>
+            <TabPanels>
+              <TabPanel>
+                {chartLoading ? (
+                  <Box textAlign="center" py={12}>
+                    <Spinner size="xl" />
+                  </Box>
+                ) : error ? (
+                  <Alert
+                    status="error"
+                    variant="subtle"
+                    flexDirection="column"
+                    alignItems="center"
+                    justifyContent="center"
+                    textAlign="center"
+                    height="200px"
+                  >
+                    <AlertIcon boxSize="40px" mr={0} />
+                    <AlertTitle mt={4} mb={1} fontSize="lg">
+                      Error Loading Chart
+                    </AlertTitle>
+                    <AlertDescription maxWidth="sm">{error}</AlertDescription>
+                  </Alert>
+                ) : (
+                  <Box height="400px">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                          dataKey="date"
+                          tickFormatter={formatXAxis}
+                          domain={["dataMin", "dataMax"]}
+                        />
+                        <YAxis
+                          tickFormatter={formatYAxis}
+                          domain={[
+                            memoizedPriceRange.min,
+                            memoizedPriceRange.max,
+                          ]}
+                        />
+                        <Tooltip
+                          formatter={formatTooltip}
+                          labelFormatter={formatTooltipLabel}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="price"
+                          stroke={isPositive ? "#38A169" : "#E53E3E"}
+                          dot={false}
+                        />
+                        <ReferenceLine
+                          y={coin.current_price}
+                          stroke="gray"
+                          strokeDasharray="3 3"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </Box>
+                )}
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+        </Box>
+      </VStack>
+    </ErrorBoundary>
   );
 };
 

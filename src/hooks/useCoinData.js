@@ -1,9 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  fetchTopCoins,
-  fetchCoinDetails,
-  fetchCoinMarketChart,
-} from "../services/geckoService";
+import { apiService } from "../services/apiService";
 
 const CACHE_DURATION = 60000; // 1 minute
 const cache = new Map();
@@ -65,12 +61,15 @@ const useCoinData = (type, params = {}) => {
 
       switch (type) {
         case "topCoins":
-          data = await fetchTopCoins();
+          data = await apiService.fetchTopCoins();
           // For top coins, we'll fetch the 24h chart data to calculate consistent price changes
           chartPromises = data.slice(0, 20).map(async (coin) => {
             try {
               // Fetch 2 days of data to ensure we have enough points for accurate 24h calculation
-              const chartData = await fetchCoinMarketChart(coin.id, 2);
+              const chartData = await apiService.fetchCoinMarketChart(
+                coin.id,
+                2
+              );
               const changes = calculatePriceChanges(chartData.prices);
               return {
                 ...coin,
@@ -85,12 +84,15 @@ const useCoinData = (type, params = {}) => {
           data = await Promise.all(chartPromises);
           break;
         case "coinDetails":
-          data = await fetchCoinDetails(memoizedParams.coinId);
+          data = await apiService.fetchCoinDetails(memoizedParams.coinId);
           break;
         case "marketChart":
           // Always fetch at least 2 days of data for accurate 24h calculation
           days = Math.max(memoizedParams.days || 7, 2);
-          chartData = await fetchCoinMarketChart(memoizedParams.coinId, days);
+          chartData = await apiService.fetchCoinMarketChart(
+            memoizedParams.coinId,
+            days
+          );
           // Calculate price changes consistently
           priceChanges = calculatePriceChanges(chartData.prices);
           data = {
